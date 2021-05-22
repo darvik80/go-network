@@ -74,7 +74,7 @@ func (s *server) handleConnection(ctx context.Context, handler func(p Pipeline) 
 		}
 	}(chData, chErr)
 
-	channel := NewChannelWith(context.Background(), handler(NewPipelineWith()), c)
+	channel := NewChannelWith(context.Background(), handler(NewPipeline()), c)
 	defer channel.Close()
 
 	for {

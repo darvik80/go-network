@@ -3,7 +3,6 @@ package net
 import (
 	"context"
 	"net"
-	"sync"
 	"sync/atomic"
 )
 
@@ -39,13 +38,10 @@ func NewChannelWith(ctx context.Context, pipeline Pipeline, transport net.Conn) 
 }
 
 type channel struct {
-	id         int64
 	ctx        context.Context
 	cancel     context.CancelFunc
 	transport  net.Conn
 	pipeline   Pipeline
-	sendQueue  chan [][]byte
-	wait       sync.WaitGroup
 	closed     int32
 }
 

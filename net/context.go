@@ -41,7 +41,6 @@ type (
 	}
 )
 
-// handlerContext impl HandlerContext
 type handlerContext struct {
 	pipeline Pipeline
 	handler  Handler

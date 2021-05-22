@@ -20,8 +20,7 @@ type Pipeline interface {
 	Channel() Channel
 }
 
-// NewPipelineWith create a pipeline.
-func NewPipelineWith() Pipeline {
+func NewPipeline() Pipeline {
 
 	p := &pipeline{}
 
@@ -41,14 +40,12 @@ func NewPipelineWith() Pipeline {
 	return p
 }
 
-// pipeline to implement Pipeline
 type pipeline struct {
 	head    *handlerContext
 	tail    *handlerContext
 	channel Channel
 }
 
-// AddFirst to add handlers at head
 func (p *pipeline) AddFirst(handlers ...Handler) Pipeline {
 	for _, h := range handlers {
 		p.addFirst(h)
@@ -57,7 +54,6 @@ func (p *pipeline) AddFirst(handlers ...Handler) Pipeline {
 	return p
 }
 
-// AddLast to add handlers at tail
 func (p *pipeline) AddLast(handlers ...Handler) Pipeline {
 	for _, h := range handlers {
 		p.addLast(h)
@@ -82,8 +78,6 @@ func (p *pipeline) addFirst(handler Handler) {
 }
 
 func (p *pipeline) addLast(handler Handler) {
-
-	// checking handler.
 	checkHandler(handler)
 
 	oldPrev := p.tail.prev
@@ -104,8 +98,6 @@ func (p *pipeline) Channel() Channel {
 func (p *pipeline) AttachChannel(channel Channel) {
 	p.channel = channel
 }
-
-
 
 func (p *pipeline) FireChannelActive() {
 	p.head.HandleActive()
@@ -132,7 +124,6 @@ func (p *pipeline) FireChannelEvent(event Event) {
 }
 
 func checkHandler(handlers ...Handler) {
-
 	for _, h := range handlers {
 		switch h.(type) {
 		case ActiveHandler:

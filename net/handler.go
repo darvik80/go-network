@@ -1,6 +1,7 @@
 package net
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"sync"
@@ -11,7 +12,7 @@ type (
 	Message interface{}
 	Event   interface{}
 
-	Handler interface {}
+	Handler interface{}
 
 	ActiveHandler interface {
 		HandleActive(ctx ActiveContext)
@@ -109,7 +110,7 @@ func (*headHandler) HandleWrite(ctx OutboundContext, message Message) {
 		data, _ := ioutil.ReadAll(m)
 		_ = ctx.Channel().WriteData(data)
 	default:
-		//panic(fmt.Errorf("unsupported type: %T", m))
+		panic(fmt.Errorf("unsupported type: %T", m))
 	}
 }
 
@@ -121,8 +122,6 @@ func (*headHandler) HandleInactive(ctx InactiveContext, err error) {
 	_ = ctx.Channel().Close()
 }
 
-// default: tailHandler
-// The final closing operation will be provided when the user registered handler is not processing.
 type tailHandler struct{}
 
 func (*tailHandler) HandleError(ctx ErrorContext, err error) {
@@ -145,22 +144,18 @@ type (
 	WriteIdleEvent struct{}
 )
 
-// ReadIdleHandler fire ReadIdleEvent after waiting for a reading timeout
 func ReadIdleHandler(idleTime time.Duration) ChannelInboundHandler {
 	return &readIdleHandler{
 		idleTime: idleTime,
 	}
 }
 
-// WriteIdleHandler fire WriteIdleEvent after waiting for a sending timeout
 func WriteIdleHandler(idleTime time.Duration) ChannelOutboundHandler {
-	//utils.AssertIf(idleTime < time.Second, "idleTime must be greater than one second")
 	return &writeIdleHandler{
 		idleTime: idleTime,
 	}
 }
 
-// readIdleHandler
 type readIdleHandler struct {
 	mutex        sync.RWMutex
 	idleTime     time.Duration
@@ -182,13 +177,12 @@ func (r *readIdleHandler) withReadLock(fn func()) {
 }
 
 func (r *readIdleHandler) HandleActive(ctx ActiveContext) {
-	// cache context.
 	r.withLock(func() {
 		r.handlerCtx = ctx
 		r.lastReadTime = time.Now()
 		r.readTimer = time.AfterFunc(r.idleTime, r.onReadTimeout)
 	})
-	// post the active event.
+
 	ctx.HandleActive()
 }
 
@@ -196,9 +190,7 @@ func (r *readIdleHandler) HandleRead(ctx InboundContext, message Message) {
 	ctx.HandleRead(message)
 
 	r.withLock(func() {
-		// update last read time.
 		r.lastReadTime = time.Now()
-		// reset timer.
 		if r.readTimer != nil {
 			r.readTimer.Reset(r.idleTime)
 		}
@@ -215,7 +207,6 @@ func (r *readIdleHandler) HandleInactive(ctx InactiveContext, err error) {
 		}
 	})
 
-	// post the inactive event.
 	ctx.HandleInactive(err)
 }
 
@@ -225,27 +216,22 @@ func (r *readIdleHandler) onReadTimeout() {
 	var ctx HandlerContext
 
 	r.withReadLock(func() {
-		// check if the idle time expires.
 		expired = time.Since(r.lastReadTime) >= r.idleTime
 		ctx = r.handlerCtx
 	})
 
 	if expired && ctx != nil {
-		// trigger event.
 		func() {
-			// capture exception.
 			defer func() {
 				if err := recover(); nil != err {
 					ctx.Channel().Pipeline().FireChannelError(err.(error))
 				}
 			}()
 
-			// trigger ReadIdleEvent.
 			ctx.Trigger(ReadIdleEvent{})
 		}()
 	}
 
-	// reset timer
 	r.withReadLock(func() {
 		if r.readTimer != nil {
 			r.readTimer.Reset(r.idleTime)
@@ -253,7 +239,6 @@ func (r *readIdleHandler) onReadTimeout() {
 	})
 }
 
-// writeIdleHandler
 type writeIdleHandler struct {
 	mutex         sync.RWMutex
 	idleTime      time.Duration
@@ -275,21 +260,16 @@ func (w *writeIdleHandler) withReadLock(fn func()) {
 }
 
 func (w *writeIdleHandler) HandleActive(ctx ActiveContext) {
-
-	// cache context
 	w.withLock(func() {
 		w.handlerCtx = ctx
 		w.lastWriteTime = time.Now()
 		w.writeTimer = time.AfterFunc(w.idleTime, w.onWriteTimeout)
 	})
 
-	// post the active event.
 	ctx.HandleActive()
 }
 
 func (w *writeIdleHandler) HandleWrite(ctx OutboundContext, message Message) {
-
-	// update last write time.
 	w.withLock(func() {
 		w.lastWriteTime = time.Now()
 		// reset timer.
@@ -298,16 +278,13 @@ func (w *writeIdleHandler) HandleWrite(ctx OutboundContext, message Message) {
 		}
 	})
 
-	// post write event.
 	ctx.HandleWrite(message)
 }
 
 func (w *writeIdleHandler) HandleInactive(ctx InactiveContext, err error) {
 
 	w.withLock(func() {
-		// reset context
 		w.handlerCtx = nil
-		// stop the timer.
 		if w.writeTimer != nil {
 			w.writeTimer.Stop()
 			w.writeTimer = nil
@@ -324,32 +301,25 @@ func (w *writeIdleHandler) onWriteTimeout() {
 	var ctx HandlerContext
 
 	w.withReadLock(func() {
-		// check if the idle time expires.
 		expired = time.Since(w.lastWriteTime) >= w.idleTime
 		ctx = w.handlerCtx
 	})
 
-	// check if the idle time expires
 	if expired && ctx != nil {
-		// trigger event.
 		func() {
-			// capture exception
 			defer func() {
 				if err := recover(); nil != err {
 					ctx.Channel().Pipeline().FireChannelError(err.(error))
 				}
 			}()
 
-			// trigger WriteIdleEvent.
 			ctx.Trigger(WriteIdleEvent{})
 		}()
 	}
 
-	// reset timer.
 	w.withReadLock(func() {
 		if w.writeTimer != nil {
 			w.writeTimer.Reset(w.idleTime)
 		}
 	})
-
 }
