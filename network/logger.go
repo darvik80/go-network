@@ -1,4 +1,4 @@
-package net
+package network
 
 import (
 	"fmt"
@@ -118,10 +118,7 @@ func dump(data []byte) string {
 func (l *logger) HandleWrite(ctx OutboundContext, msg Message) {
 	switch data := msg.(type) {
 	case []byte:
-		l.log.Info(
-			ctx.Channel().RemoteAddr().String(),
-			fmt.Sprintf(" send: %s (%d)\r\n%s\r\n", data, len(data), dump(data)),
-		)
+		l.log.Info(fmt.Sprintf("send: (%d) %s\r\n%s\r\n", len(data), data, dump(data)))
 	}
 
 	ctx.HandleWrite(msg)
@@ -130,7 +127,7 @@ func (l *logger) HandleWrite(ctx OutboundContext, msg Message) {
 func (l *logger) HandleRead(ctx InboundContext, msg Message) {
 	switch data := msg.(type) {
 	case []byte:
-		l.log.Infof(" read: %s(%d)\r\n%s\r\n", data, len(data), dump(data))
+		l.log.Infof("read: (%d) %s\r\n%s\r\n", len(data), data, dump(data))
 	}
 
 	ctx.HandleRead(msg)

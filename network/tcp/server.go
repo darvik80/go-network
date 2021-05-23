@@ -1,7 +1,8 @@
-package net
+package tcp
 
 import (
 	"context"
+	"github.com/darvik80/go-network/network"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
@@ -12,7 +13,7 @@ type server struct {
 	host     string
 	port     int
 	listener net.Listener
-	log      *log.Entry
+	log      log.FieldLogger
 	ctx      context.Context
 }
 
@@ -24,14 +25,14 @@ func NewServer(host string, port int) *server {
 		log.WithFields(
 			log.Fields{
 				"module": "tcp-server",
-				"server": host,
+				"addr":   host,
 				"port":   port,
 			}),
 		context.Background(),
 	}
 }
 
-func (s *server) Start(h func(p Pipeline) Pipeline) error {
+func (s *server) Start(h func(p network.Pipeline) network.Pipeline) error {
 	l, err := net.Listen("tcp4", s.host+":"+strconv.Itoa(s.port))
 	if err != nil {
 		return err
@@ -42,11 +43,13 @@ func (s *server) Start(h func(p Pipeline) Pipeline) error {
 		for {
 			c, err := l.Accept()
 			if err != nil {
-				s.log.Warnf("can't accept connection, %e", err)
+				if err != net.ErrClosed {
+					s.log.Warnf("can't accept connection, %s", err.Error())
+				}
 				cancel()
 				return
 			} else {
-				s.handleConnection(ctx, h, c)
+				go s.handleConnection(ctx, h, c)
 			}
 		}
 	}()
@@ -56,7 +59,7 @@ func (s *server) Start(h func(p Pipeline) Pipeline) error {
 	return nil
 }
 
-func (s *server) handleConnection(ctx context.Context, handler func(p Pipeline) Pipeline, c net.Conn) {
+func (s *server) handleConnection(ctx context.Context, handler func(p network.Pipeline) network.Pipeline, c net.Conn) {
 	chData := make(chan []byte)
 	chErr := make(chan error)
 	go func(chData chan []byte, chErr chan error) {
@@ -74,7 +77,7 @@ func (s *server) handleConnection(ctx context.Context, handler func(p Pipeline) 
 		}
 	}(chData, chErr)
 
-	channel := NewChannelWith(context.Background(), handler(NewPipeline()), c)
+	channel := network.NewChannelWith(context.Background(), handler(network.NewPipeline()), c)
 	defer channel.Close()
 
 	for {
@@ -91,6 +94,9 @@ func (s *server) handleConnection(ctx context.Context, handler func(p Pipeline) 
 	}
 }
 
-func (s *server) Shutdown() error {
-	return s.listener.Close()
+func (s *server) Shutdown() {
+	s.log.Info("shutdown server")
+	if err := s.listener.Close(); err != nil {
+		s.log.Warn("failed stop listener: ", err.Error())
+	}
 }

@@ -1,4 +1,4 @@
-package net
+package network
 
 import (
 	"fmt"
@@ -46,9 +46,28 @@ type pipeline struct {
 	channel Channel
 }
 
+func (p* pipeline) adapter(h Handler) Handler {
+	switch item := h.(type) {
+	case func(ctx ActiveContext):
+		return ActiveHandlerFunc(item)
+	case func(ctx InactiveContext, err error):
+		return InactiveHandlerFunc(item)
+	case func(ctx OutboundContext, message Message):
+		return OutboundHandlerFunc(item)
+	case func(ctx InboundContext, message Message):
+		return InboundHandlerFunc(item)
+	case func(ctx ErrorContext, err error):
+		return ErrorHandlerFunc(item)
+	case func(ctx EventContext, event Event):
+		return EventHandlerFunc(item)
+	default:
+		return h
+	}
+}
+
 func (p *pipeline) AddFirst(handlers ...Handler) Pipeline {
 	for _, h := range handlers {
-		p.addFirst(h)
+		p.addFirst(p.adapter(h))
 	}
 
 	return p
@@ -56,7 +75,7 @@ func (p *pipeline) AddFirst(handlers ...Handler) Pipeline {
 
 func (p *pipeline) AddLast(handlers ...Handler) Pipeline {
 	for _, h := range handlers {
-		p.addLast(h)
+		p.addLast(p.adapter(h))
 	}
 	return p
 }

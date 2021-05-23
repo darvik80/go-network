@@ -1,4 +1,4 @@
-package net
+package network
 
 type (
 	HandlerContext interface {

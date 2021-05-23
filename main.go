@@ -2,7 +2,8 @@ package main
 
 import (
 	"github.com/darvik80/go-network/logging"
-	"github.com/darvik80/go-network/net"
+	"github.com/darvik80/go-network/network"
+	"github.com/darvik80/go-network/network/tcp"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -17,23 +18,55 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	log.Info("Start app")
+	log.Info("start app")
+	defer log.Info("shutdown app")
 
-	server := net.NewServer("0.0.0.0", 5000)
-	err := server.Start(func(p net.Pipeline) net.Pipeline {
+	client := tcp.NewClient("0.0.0.0", 5001)
+	err := client.Start(func(p network.Pipeline) network.Pipeline {
 		p.AddLast(
-			net.NewLogger(),
-			net.ReadIdleHandler(time.Second*60),
-			net.WriteIdleHandler(time.Second*60),
-			net.OutboundHandlerFunc(func(ctx net.OutboundContext, message net.Message) {
+			network.NewLogger(),
+			network.IdleHandler(time.Second*10),
+			func(ctx network.OutboundContext, message network.Message) {
 				switch m := message.(type) {
 				case string:
 					ctx.Write([]byte("[" + m + "]\r\n"))
 				default:
 					log.Warn(ctx.Channel().RemoteAddr().String(), "drop message: ", m)
 				}
-			}),
-			net.InboundHandlerFunc(func(ctx net.InboundContext, message net.Message) {
+			},
+			func(ctx network.EventContext, event network.Event) {
+				switch event.(type) {
+				case network.IdleEvent:
+					log.Info("read/write idle: ", ctx.Channel().RemoteAddr().String())
+					ctx.Write("ALIVE")
+				default:
+				}
+			},
+		)
+
+		return p
+	})
+
+	if err != nil {
+		return
+	}
+	defer client.Shutdown()
+
+	server := tcp.NewServer("0.0.0.0", 5000)
+	err = server.Start(func(p network.Pipeline) network.Pipeline {
+		p.AddLast(
+			network.NewLogger(),
+			network.ReadIdleHandler(time.Second*60),
+			network.WriteIdleHandler(time.Second*60),
+			func(ctx network.OutboundContext, message network.Message) {
+				switch m := message.(type) {
+				case string:
+					ctx.Write([]byte("[" + m + "]\r\n"))
+				default:
+					log.Warn(ctx.Channel().RemoteAddr().String(), "drop message: ", m)
+				}
+			},
+			func(ctx network.InboundContext, message network.Message) {
 				str := strings.ToLower(strings.Trim(string(message.([]byte)), " \r\n"))
 				log.Info("handle: ", str)
 				ctx.Write("Ping")
@@ -46,17 +79,16 @@ func main() {
 				default:
 					ctx.Write(str)
 				}
-			}),
-			net.EventHandlerFunc(func(ctx net.EventContext, event net.Event) {
+			},
+			func(ctx network.EventContext, event network.Event) {
 				switch event.(type) {
-				case net.ReadIdleEvent:
+				case network.ReadIdleEvent:
 					log.Info("read idle: ", ctx.Channel().RemoteAddr().String())
-				case net.WriteIdleEvent:
+				case network.WriteIdleEvent:
 					log.Info("write idle: ", ctx.Channel().RemoteAddr().String())
 					ctx.Write("ALIVE")
-				default:
 				}
-			}),
+			},
 		)
 		return p
 	})
@@ -65,7 +97,7 @@ func main() {
 		return
 	}
 
-	<-sigs
+	defer server.Shutdown()
 
-	log.Info("Shutdown app")
+	<-sigs
 }
