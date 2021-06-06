@@ -100,7 +100,6 @@ spec:
               value: "Asia/Shanghai"
             - name: JAVA_OPT_EXT
               value: "-Duser.home=/home/rocketmq -Xms512m -Xmx512m -Xmn128m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m"
-          #command: ["/bin/sh", "mqbroker -n rmqnamesrv:9876"]
           command: ["/bin/sh", "mqbroker"]
           args: ["-n", "rmqnamesrv:9876", "-c","/home/rocketmq/broker.conf/broker.properties"]
           volumeMounts:
