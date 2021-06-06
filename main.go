@@ -1,6 +1,7 @@
 package main
 
 import (
+	"darvik80/go-network/config"
 	"github.com/darvik80/go-network/logging"
 	"github.com/darvik80/go-network/network"
 	"github.com/darvik80/go-network/network/tcp"
@@ -15,6 +16,14 @@ import (
 func main() {
 	logging.Setup()
 
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		log.Error("failed read config ", err)
+		return
+	}
+
+	log.Info(cfg)
+
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
@@ -22,7 +31,7 @@ func main() {
 	defer log.Info("shutdown app")
 
 	client := tcp.NewClient("0.0.0.0", 5001)
-	err := client.Start(func(p network.Pipeline) network.Pipeline {
+	err = client.Start(func(p network.Pipeline) network.Pipeline {
 		p.AddLast(
 			network.NewLogger(),
 			network.IdleHandler(time.Second*10),

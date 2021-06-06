@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rmqnamesrv
+  labels:
+    app: rmqnamesrv
+spec:
+  selector:
+    app: rmqnamesrv
+  ports:
+    - port: 9876
+      name: rmqnamesrv
+      targetPort: 9876
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rmqbroker
+  labels:
+    app: rmqbroker
+spec:
+  selector:
+    app: rmqbroker
+  ports:
+    - port: 10911
+      name: rmqbroker
+      targetPort: 10911
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rmqnamesrv
+spec:
+  selector:
+    matchLabels:
+      app: rmqnamesrv
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: rmqnamesrv
+    spec:
+      containers:
+        - name: rmqnamesrv
+          imagePullPolicy: IfNotPresent
+          image: apacherocketmq/rocketmq:4.5.0
+          ports:
+            - containerPort: 9876
+              name: rmqnamesrv
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+            - name: JAVA_OPT_EXT
+              value: "-Duser.home=/home/rocketmq -Xms512m -Xmx512m -Xmn128m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m"
+          command: ["/bin/sh", "mqnamesrv"]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rmqbroker-config
+  namespace: default
+data:
+  broker.properties: |
+    brokerIP1 = rmqbroker
+    brokerClusterName = DefaultCluster
+    brokerName = broker-a
+    brokerId = 0
+    deleteWhen = 04
+    fileReservedTime = 48
+    brokerRole = ASYNC_MASTER
+    flushDiskType = ASYNC_FLUSH
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rmqbroker
+spec:
+  selector:
+    matchLabels:
+      app: rmqbroker
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: rmqbroker
+    spec:
+      containers:
+        - name: rmqbroker
+          imagePullPolicy: IfNotPresent
+          image: apacherocketmq/rocketmq:4.5.0
+          ports:
+            - containerPort: 10911
+              name: rmqbroker
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+            - name: JAVA_OPT_EXT
+              value: "-Duser.home=/home/rocketmq -Xms512m -Xmx512m -Xmn128m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m"
+          #command: ["/bin/sh", "mqbroker -n rmqnamesrv:9876"]
+          command: ["/bin/sh", "mqbroker"]
+          args: ["-n", "rmqnamesrv:9876", "-c","/home/rocketmq/broker.conf/broker.properties"]
+          volumeMounts:
+            - name: rmqbroker-config
+              mountPath: /home/rocketmq/broker.conf
+      volumes:
+      - name: rmqbroker-config
+        configMap:
+          name: rmqbroker-config

@@ -1,0 +1,9 @@
+rocket-mq:
+  name-server: 127.0.0.1:9876
+links:
+  - name: dws1
+    address: 127.0.0.1
+    port: 8000
+  - name: dws2
+    address: 127.0.0.1
+    port: 8001
