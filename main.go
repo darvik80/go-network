@@ -1,32 +1,43 @@
 package main
 
 import (
+	"darvik80/go-network/config"
 	"darvik80/go-network/exchange"
+	"darvik80/go-network/middleware"
 	"github.com/darvik80/go-network/logging"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 )
 
 func main() {
-	logging.Setup()
-
-	//cfg, err := config.ReadConfig()
-	//if err != nil {
-	//	log.Error("failed read config ", err)
-	//	return
-	//}
-	//
-	//log.Info(cfg)
-
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	log.Info("start app")
-	defer log.Info("shutdown app")
+	logging.Setup()
 
-	ex := exchange.NewChanExchange()
+	cfg, err := config.ReadConfig()
+	if err != nil && cfg == nil {
+		log.Error("failed read config ", err)
+		return
+	}
+
+	log.Info(cfg)
+
+	mid, err := middleware.NewMiddleware(cfg.Links)
+	if err != nil {
+		log.Error("failed create middleware", err)
+		return
+	}
+	defer mid.Shutdown()
+
+	log.Info("[app] start app")
+	defer log.Info("[app] shutdown app")
+
+	ex := exchange.NewChanExchange(128, runtime.NumCPU())
 	ex.Subscribe(func(report exchange.DwsReport) {
 		log.Info("[exc] handle DWS Report")
 	})

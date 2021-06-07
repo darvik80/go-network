@@ -4,6 +4,8 @@ links:
   - name: dws1
     address: 127.0.0.1
     port: 8000
-  - name: dws2
+    mode: SERVER
+  - name: plc1
     address: 127.0.0.1
     port: 8001
+    mode: CLIENT

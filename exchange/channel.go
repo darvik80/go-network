@@ -7,13 +7,18 @@ type channel struct {
 	handlers *list.List
 }
 
-func NewChanExchange() *channel {
+func NewChanExchange(bufSize, routines int) *channel {
 	ex := &channel{
-		ch:       make(chan interface{}, 128),
+		ch:       make(chan interface{}, bufSize),
 		handlers: list.New(),
 	}
 
-	go ex.process()
+	if routines <= 0 {
+		routines = 1
+	}
+	for idx := 0; idx < routines; idx++ {
+		go ex.process()
+	}
 
 	return ex
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"darvik80/go-network/middleware"
 	"fmt"
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
@@ -18,11 +19,7 @@ type Config struct {
 	RocketMQ struct {
 		Nameserver string `yaml:"name-server"`
 	} `yaml:"rocket-mq"`
-	Links []struct {
-		Name    string `yaml:"name"`
-		Address string `yaml:"address"`
-		Port    string `yaml:"port"`
-	} `yaml:"links"`
+	Links []middleware.DeviceConfig `yaml:"links"`
 }
 
 func readConfig(r io.Reader, cfg *Config) error {
@@ -109,7 +106,7 @@ func ReadConfig() (*Config, error) {
 
 	err = ReadCloudConfig(DefaultDataId, cfg)
 	if err != nil {
-		return nil, err
+		return cfg, err
 	}
 
 	return cfg, nil
