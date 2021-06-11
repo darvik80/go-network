@@ -8,45 +8,47 @@ import (
 )
 
 type middleware struct {
-	servers map[string]network.Transport
-	clients map[string]network.Transport
+	links []Link
+	serverConnector DeviceConnector
+	clientConnector DeviceConnector
 }
 
 func NewMiddleware(config []DeviceConfig) (*middleware, error) {
 	mid := &middleware{
-		servers: make(map[string]network.Transport),
-		clients: make(map[string]network.Transport),
+		serverConnector : NewServerConnector(),
+		clientConnector: NewClientConnector(),
 	}
 
 	for _, deviceConfig := range config {
-		key := deviceConfig.Address + ":" + strconv.Itoa(deviceConfig.Port)
-		if deviceConfig.Mode == "SERVER" {
-			if _, found := mid.servers[key]; !found {
-				log.Info("[mid] create server: ", deviceConfig.Address, ":", deviceConfig.Port)
-				server := tcp.NewServer(deviceConfig.Address, deviceConfig.Port)
-				mid.servers[key] = server
-			}
-		} else if deviceConfig.Mode == "CLIENT" {
-			if _, found := mid.servers[key]; !found {
-				log.Info("[mid] create client: ", deviceConfig.Address, ":", deviceConfig.Port)
-				client := tcp.NewClient(deviceConfig.Address, deviceConfig.Port)
-				mid.servers[key] = client
-			}
+		device := NewDevice(deviceConfig)
+		switch device.Mode() {
+		case SERVER:
+			mid.serverConnector.Connect(device)
+		case CLIENT:
+			mid.clientConnector.Connect(device)
 		}
+		//key := deviceConfig.Address + ":" + strconv.Itoa(deviceConfig.Port)
+		//if deviceConfig.Mode == "SERVER" {
+		//	if _, found := mid.servers[key]; !found {
+		//		log.Info("[mid] create server: ", deviceConfig.Address, ":", deviceConfig.Port)
+		//		server := tcp.NewServer(deviceConfig.Address, deviceConfig.Port)
+		//		mid.servers[key] = server
+		//	}
+		//} else if deviceConfig.Mode == "CLIENT" {
+		//	if _, found := mid.servers[key]; !found {
+		//		log.Info("[mid] create client: ", deviceConfig.Address, ":", deviceConfig.Port)
+		//		client := tcp.NewClient(deviceConfig.Address, deviceConfig.Port)
+		//		mid.servers[key] = client
+		//	}
+		//}
 	}
 
-	for _, server := range mid.servers {
-		// TODO: create server factory
-		if err := server.Start(nil); err != nil {
-			return nil, err
-		}
+	if err := mid.serverConnector.Start(); err != nil {
+		return nil, err
 	}
 
-	for _, client := range mid.clients {
-		// TODO: create client factory
-		if err := client.Start(nil); err != nil {
-			return nil, err
-		}
+	if err := mid.clientConnector.Start(); err != nil {
+		return nil, err
 	}
 
 	return mid, nil

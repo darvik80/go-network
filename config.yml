@@ -2,10 +2,11 @@ rocket-mq:
   name-server: 127.0.0.1:9876
 links:
   - name: dws1
-    address: 127.0.0.1
-    port: 8000
+    address: 127.0.0.1:8000
     mode: SERVER
+    codec: SSW_DWS
   - name: plc1
-    address: 127.0.0.1
-    port: 8001
+    address: 127.0.0.1:5000
     mode: CLIENT
+    codec: SSW_PLC
+

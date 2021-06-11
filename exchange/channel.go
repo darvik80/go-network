@@ -50,11 +50,11 @@ func (e *channel) process() {
 	}
 }
 
-func (e *channel) Send(msg interface{}) {
+func (e *channel) Send(msg Report) {
 	e.ch <- msg
 }
 
-func (e *channel) Subscribe(handler interface{}) {
+func (e *channel) Subscribe(handler Handler) {
 	e.handlers.PushBack(adapter(handler))
 }
 

@@ -2,38 +2,43 @@ package tcp
 
 import (
 	"context"
+	"darvik80/go-network/middleware"
 	"github.com/darvik80/go-network/network"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
-	"strconv"
 )
 
 type server struct {
 	host     string
-	port     int
 	listener net.Listener
 	log      log.FieldLogger
 	ctx      context.Context
+
+	devices map[string]middleware.Device
 }
 
-func NewServer(host string, port int) *server {
+func NewServer(host string) *server {
 	return &server{
 		host,
-		port,
 		nil,
 		log.WithFields(
 			log.Fields{
 				"module": "tcp-server",
 				"addr":   host,
-				"port":   port,
 			}),
 		context.Background(),
+
+		make(map[string]middleware.Device),
 	}
 }
 
+func (s *server) Attach(d middleware.Device) {
+
+}
+
 func (s *server) Start(h func(p network.Pipeline) network.Pipeline) error {
-	l, err := net.Listen("tcp4", s.host+":"+strconv.Itoa(s.port))
+	l, err := net.Listen("tcp4", s.host)
 	if err != nil {
 		return err
 	}

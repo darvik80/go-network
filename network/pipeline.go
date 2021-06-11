@@ -2,7 +2,18 @@ package network
 
 import (
 	"fmt"
+	"github.com/darvik80/go-network/network"
 )
+
+type PipelineFactory interface {
+	create(p network.Pipeline) network.Pipeline
+}
+
+type PipelineFactoryFunc func(p network.Pipeline) network.Pipeline
+
+func (fn PipelineFactoryFunc) create(p network.Pipeline) network.Pipeline {
+	return fn(p)
+}
 
 type Pipeline interface {
 	AttachChannel(channel Channel)
@@ -46,7 +57,7 @@ type pipeline struct {
 	channel Channel
 }
 
-func (p* pipeline) adapter(h Handler) Handler {
+func adapter(h Handler) Handler {
 	switch item := h.(type) {
 	case func(ctx ActiveContext):
 		return ActiveHandlerFunc(item)
@@ -67,7 +78,7 @@ func (p* pipeline) adapter(h Handler) Handler {
 
 func (p *pipeline) AddFirst(handlers ...Handler) Pipeline {
 	for _, h := range handlers {
-		p.addFirst(p.adapter(h))
+		p.addFirst(adapter(h))
 	}
 
 	return p
@@ -75,7 +86,7 @@ func (p *pipeline) AddFirst(handlers ...Handler) Pipeline {
 
 func (p *pipeline) AddLast(handlers ...Handler) Pipeline {
 	for _, h := range handlers {
-		p.addLast(p.adapter(h))
+		p.addLast(adapter(h))
 	}
 	return p
 }
