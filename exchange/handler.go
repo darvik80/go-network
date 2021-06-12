@@ -4,14 +4,16 @@ type Handler interface{}
 
 func adapter(h Handler) Handler {
 	switch item := h.(type) {
-	case func(report DwsReport):
+	case func(source Source, report DwsReport):
 		return HandlerDwsReportFunc(item)
-	case func(report SortReport):
+	case func(source Source, report SortReport):
 		return HandlerSortReportFunc(item)
 	default:
 		return h
 	}
 }
+
+type Source interface {}
 
 type Report interface {}
 
@@ -24,22 +26,22 @@ type DwsReport struct {
 }
 
 type HandlerDwsReport interface {
-	OnMessage(report DwsReport)
+	OnMessage(source Source, report DwsReport)
 }
 
-type HandlerDwsReportFunc func(report DwsReport)
+type HandlerDwsReportFunc func(source Source, report DwsReport)
 
-func (fn HandlerDwsReportFunc) OnMessage(report DwsReport) { fn(report) }
+func (fn HandlerDwsReportFunc) OnMessage(source Source, report DwsReport) { fn(source, report) }
 
 type SortReport struct {
-	Id      int16
-	ChuteId int16
+	Id      int
+	ChuteId int
 }
 
 type HandlerSortReport interface {
-	OnMessage(report SortReport)
+	OnMessage(source Source, report SortReport)
 }
 
-type HandlerSortReportFunc func(report SortReport)
+type HandlerSortReportFunc func(source Source, report SortReport)
 
-func (fn HandlerSortReportFunc) OnMessage(report SortReport) { fn(report) }
+func (fn HandlerSortReportFunc) OnMessage(source Source, report SortReport) { fn(source, report) }

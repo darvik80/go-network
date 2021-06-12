@@ -22,6 +22,7 @@ func GetDeviceMode(mode string) DeviceMode {
 
 type Device interface {
 	Address() string
+	AllowedAddresses() []string
 	Mode() DeviceMode
 	Codec() codec.Codec
 	Name() string
@@ -39,6 +40,10 @@ type simpleDevice struct {
 
 func (d *simpleDevice) Address() string {
 	return d.cfg.Address
+}
+
+func (d *simpleDevice) AllowedAddresses() []string {
+	return d.cfg.AllowedAddresses
 }
 
 func (d *simpleDevice) Mode() DeviceMode {

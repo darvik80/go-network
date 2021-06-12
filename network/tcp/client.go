@@ -2,49 +2,47 @@ package tcp
 
 import (
 	"context"
-	"github.com/darvik80/go-network/network"
+	"darvik80/go-network/network"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
-	"strconv"
 	"time"
 )
 
 type client struct {
 	host   string
-	port   int
 	log    log.FieldLogger
 	ctx    context.Context
 	cancel context.CancelFunc
+	factory network.PipelineFactory
 }
 
-func NewClient(host string, port int) *client {
+func NewClient(host string, factory network.PipelineFactory) *client {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &client{
 		host,
-		port,
 		log.WithFields(
 			log.Fields{
 				"module": "tcp-client",
 				"addr":   host,
-				"port":   port,
 			}),
 		ctx,
 		cancel,
+		factory,
 	}
 }
 
-func (c *client) Start(h func(p network.Pipeline) network.Pipeline) error {
+func (c *client) Start(factory network.HandlerFactory) error {
 	go func() {
 		d := net.Dialer{Timeout: time.Second * 5}
 		for {
-			conn, err := d.Dial("tcp4", c.host+":"+strconv.Itoa(c.port))
+			conn, err := d.Dial("tcp4", c.host)
 			if err != nil {
 				c.log.Warnf(err.Error())
 				time.Sleep(time.Second)
 			} else {
-				c.handleConnection(c.ctx, h, conn)
+				c.handleConnection(c.ctx, factory, conn)
 				select {
 				case <-c.ctx.Done():
 					return
@@ -57,7 +55,7 @@ func (c *client) Start(h func(p network.Pipeline) network.Pipeline) error {
 	return nil
 }
 
-func (s *client) handleConnection(ctx context.Context, handler func(p network.Pipeline) network.Pipeline, c net.Conn) {
+func (s *client) handleConnection(ctx context.Context, hf network.HandlerFactory , c net.Conn) {
 	chData := make(chan []byte)
 	chErr := make(chan error)
 	go func(chData chan []byte, chErr chan error) {
@@ -75,7 +73,8 @@ func (s *client) handleConnection(ctx context.Context, handler func(p network.Pi
 		}
 	}(chData, chErr)
 
-	channel := network.NewChannelWith(context.Background(), handler(network.NewPipeline()), c)
+	p := s.factory.Create(network.NewPipeline()).AddLast(hf.Create(ctx, c))
+	channel := network.NewChannelWith(context.Background(), p, c)
 	defer channel.Close()
 
 	for {

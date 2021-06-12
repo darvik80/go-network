@@ -20,20 +20,6 @@ func NewMiddleware(config []DeviceConfig) (*middleware, error) {
 		case CLIENT:
 			mid.clientConnector.Connect(device)
 		}
-		//key := deviceConfig.Address + ":" + strconv.Itoa(deviceConfig.Port)
-		//if deviceConfig.Mode == "SERVER" {
-		//	if _, found := mid.servers[key]; !found {
-		//		log.Info("[mid] create server: ", deviceConfig.Address, ":", deviceConfig.Port)
-		//		server := tcp.NewServer(deviceConfig.Address, deviceConfig.Port)
-		//		mid.servers[key] = server
-		//	}
-		//} else if deviceConfig.Mode == "CLIENT" {
-		//	if _, found := mid.servers[key]; !found {
-		//		log.Info("[mid] create client: ", deviceConfig.Address, ":", deviceConfig.Port)
-		//		client := tcp.NewClient(deviceConfig.Address, deviceConfig.Port)
-		//		mid.servers[key] = client
-		//	}
-		//}
 	}
 
 	if err := mid.serverConnector.Start(); err != nil {
@@ -48,11 +34,6 @@ func NewMiddleware(config []DeviceConfig) (*middleware, error) {
 }
 
 func (mid *middleware) Shutdown() {
-	//for _, server := range mid.servers {
-	//	server.Shutdown()
-	//}
-	//
-	//for _, client := range mid.clients {
-	//	client.Shutdown()
-	//}
+	mid.serverConnector.Shutdown()
+	mid.clientConnector.Shutdown()
 }

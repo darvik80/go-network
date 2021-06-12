@@ -1,9 +1,11 @@
 package network
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"sync"
 	"time"
 )
@@ -36,6 +38,10 @@ type (
 
 	EventHandler interface {
 		HandleEvent(ctx EventContext, event Event)
+	}
+
+	HandlerFactory interface {
+		Create(ctx context.Context, conn net.Conn) Handler
 	}
 )
 
@@ -88,6 +94,38 @@ func (fn InactiveHandlerFunc) HandleInactive(ctx InactiveContext, err error) { f
 type EventHandlerFunc func(ctx EventContext, event Event)
 
 func (fn EventHandlerFunc) HandleEvent(ctx EventContext, event Event) { fn(ctx, event) }
+
+type HandlerFactoryFunc func(ctx context.Context, conn net.Conn) Handler
+
+func (fn HandlerFactoryFunc) Create(ctx context.Context, conn net.Conn) Handler {
+	return fn(ctx, conn)
+}
+
+type channelInboundHandlerFunc struct {
+	activeHandler ActiveHandlerFunc
+	inboundHandler InboundHandlerFunc
+	inactiveHandler InactiveHandlerFunc
+}
+
+func NewChannelInboundHandlerFunc(active ActiveHandlerFunc, inbound InboundHandlerFunc, inactive InactiveHandlerFunc) ChannelInboundHandler {
+	return &channelInboundHandlerFunc{
+		activeHandler: active,
+		inboundHandler: inbound,
+		inactiveHandler: inactive,
+	}
+}
+
+func (fn channelInboundHandlerFunc) HandleActive(ctx ActiveContext) {
+	fn.activeHandler(ctx)
+}
+
+func (fn channelInboundHandlerFunc) HandleRead(ctx InboundContext, message Message) {
+	fn.inboundHandler(ctx, message)
+}
+
+func (fn channelInboundHandlerFunc) HandleInactive(ctx InactiveContext, err error) {
+	fn.inactiveHandler(ctx, err)
+}
 
 type headHandler struct{}
 
@@ -327,11 +365,11 @@ func (w *writeIdleHandler) onWriteTimeout() {
 }
 
 type idleHandler struct {
-	mutex         sync.RWMutex
-	idleTime      time.Duration
-	lastTime time.Time
-	timer    *time.Timer
-	handlerCtx    HandlerContext
+	mutex      sync.RWMutex
+	idleTime   time.Duration
+	lastTime   time.Time
+	timer      *time.Timer
+	handlerCtx HandlerContext
 }
 
 func (i *idleHandler) withLock(fn func()) {

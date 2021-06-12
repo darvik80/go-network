@@ -2,9 +2,8 @@ package main
 
 import (
 	"darvik80/go-network/config"
-	"darvik80/go-network/exchange"
+	"darvik80/go-network/logging"
 	"darvik80/go-network/middleware"
-	"github.com/darvik80/go-network/logging"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -37,22 +36,23 @@ func main() {
 	log.Info("[app] start app")
 	defer log.Info("[app] shutdown app")
 
-	ex := exchange.NewChanExchange(128, runtime.NumCPU())
-	ex.Subscribe(func(report exchange.DwsReport) {
-		log.Info("[exc] handle DWS Report")
-	})
+	//ex := exchange.NewChanExchange(128, runtime.NumCPU())
+	//ex.Subscribe(func(report exchange.DwsReport) {
+	//	log.Info("[exc] handle DWS Report")
+	//})
+	//
+	//ex.Subscribe(func(report exchange.SortReport) {
+	//	log.Info("[exc] handle Sort Report")
+	//})
+	//
+	//ex.Send(exchange.SortReport{})
+	//ex.Send(exchange.DwsReport{})
+	//ex.Send(exchange.SortReport{})
+	//ex.Send(exchange.SortReport{})
+	//ex.Send(exchange.SortReport{})
+	//
+	//defer ex.Shutdown()
 
-	ex.Subscribe(func(report exchange.SortReport) {
-		log.Info("[exc] handle Sort Report")
-	})
-
-	ex.Send(exchange.SortReport{})
-	ex.Send(exchange.DwsReport{})
-	ex.Send(exchange.SortReport{})
-	ex.Send(exchange.SortReport{})
-	ex.Send(exchange.SortReport{})
-
-	defer ex.Shutdown()
 
 	//client := tcp.NewClient("0.0.0.0", 5001)
 	//err = client.Start(func(p network.Pipeline) network.Pipeline {

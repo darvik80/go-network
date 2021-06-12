@@ -2,14 +2,19 @@ package exchange
 
 import "container/list"
 
+type message struct {
+	source Source
+	report Report
+}
+
 type channel struct {
-	ch       chan interface{}
+	ch       chan message
 	handlers *list.List
 }
 
 func NewChanExchange(bufSize, routines int) *channel {
 	ex := &channel{
-		ch:       make(chan interface{}, bufSize),
+		ch:       make(chan message, bufSize),
 		handlers: list.New(),
 	}
 
@@ -27,22 +32,21 @@ func (e *channel) process() {
 	for {
 		select {
 		case msg, ok := <-e.ch:
-			if !ok {
-				return
-			}
-			switch m := msg.(type) {
-			case DwsReport:
-				for h := e.handlers.Front(); h != nil; h = h.Next() {
-					switch handler := h.Value.(type) {
-					case HandlerDwsReport:
-						handler.OnMessage(m)
+			if ok {
+				switch m := msg.report.(type) {
+				case DwsReport:
+					for h := e.handlers.Front(); h != nil; h = h.Next() {
+						switch handler := h.Value.(type) {
+						case HandlerDwsReport:
+							handler.OnMessage(msg.source, m)
+						}
 					}
-				}
-			case SortReport:
-				for h := e.handlers.Front(); h != nil; h = h.Next() {
-					switch handler := h.Value.(type) {
-					case HandlerSortReport:
-						handler.OnMessage(m)
+				case SortReport:
+					for h := e.handlers.Front(); h != nil; h = h.Next() {
+						switch handler := h.Value.(type) {
+						case HandlerSortReport:
+							handler.OnMessage(msg.source, m)
+						}
 					}
 				}
 			}
@@ -50,8 +54,8 @@ func (e *channel) process() {
 	}
 }
 
-func (e *channel) Send(msg Report) {
-	e.ch <- msg
+func (e *channel) Send(source Source, msg Report) {
+	e.ch <- message{ source, msg }
 }
 
 func (e *channel) Subscribe(handler Handler) {

@@ -1,23 +1,20 @@
 package codec
 
 import (
+	"darvik80/go-network/middleware/codec/ssw"
 	"darvik80/go-network/network"
-	"time"
 )
 
-func NewPipeline(h network.Handler, codec Codec) func(p network.Pipeline) network.Pipeline {
+func NewPipelineFactory(codec Codec) network.PipelineFactory {
 	switch codec {
-	case CodecSswDws:
-		return func(p network.Pipeline) network.Pipeline {
-			p.AddLast(
-				network.NewLogger(),
-				network.ReadIdleHandler(time.Second*60),
-			)
-
-			return p
-		}
-	case CodecSswPlc:
-		return nil
+	case SswDws:
+		return network.PipelineFactoryFunc(func(p network.Pipeline) network.Pipeline {
+			return ssw.DwsPipeline(p)
+		})
+	case SswPlc:
+		return network.PipelineFactoryFunc(func(p network.Pipeline) network.Pipeline {
+			return ssw.PlcPipeline(p)
+		})
 	}
 
 	return nil

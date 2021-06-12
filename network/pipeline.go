@@ -2,26 +2,22 @@ package network
 
 import (
 	"fmt"
-	"github.com/darvik80/go-network/network"
 )
 
 type PipelineFactory interface {
-	create(p network.Pipeline) network.Pipeline
+	Create(p Pipeline) Pipeline
 }
 
-type PipelineFactoryFunc func(p network.Pipeline) network.Pipeline
+type PipelineFactoryFunc func(p Pipeline) Pipeline
 
-func (fn PipelineFactoryFunc) create(p network.Pipeline) network.Pipeline {
+func (fn PipelineFactoryFunc) Create(p Pipeline) Pipeline {
 	return fn(p)
 }
 
 type Pipeline interface {
 	AttachChannel(channel Channel)
-
 	AddFirst(handlers ...Handler) Pipeline
-
 	AddLast(handlers ...Handler) Pipeline
-
 	FireChannelActive()
 	FireChannelRead(message Message)
 	FireChannelWrite(message Message)

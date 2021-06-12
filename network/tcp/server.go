@@ -8,27 +8,28 @@ import (
 	"net"
 )
 
+var logger = log.WithFields(
+	log.Fields{
+		"module": "tcp-server",
+	})
+
 type server struct {
 	host     string
 	listener net.Listener
-	log      log.FieldLogger
 	ctx      context.Context
+	factory  network.PipelineFactory
 }
 
-func NewServer(host string) *server {
+func NewServer(host string, factory network.PipelineFactory) *server {
 	return &server{
 		host,
 		nil,
-		log.WithFields(
-			log.Fields{
-				"module": "tcp-server",
-				"addr":   host,
-			}),
 		context.Background(),
+		factory,
 	}
 }
 
-func (s *server) Start(h func(p network.Pipeline) network.Pipeline) error {
+func (s *server) Start(factory network.HandlerFactory) error {
 	l, err := net.Listen("tcp4", s.host)
 	if err != nil {
 		return err
@@ -40,22 +41,27 @@ func (s *server) Start(h func(p network.Pipeline) network.Pipeline) error {
 			c, err := l.Accept()
 			if err != nil {
 				if err != net.ErrClosed {
-					s.log.Warnf("can't accept connection, %s", err.Error())
+					logger.Warnf("%s, can't accept connection, %s", s.host, err.Error())
 				}
 				cancel()
 				return
 			} else {
-				go s.handleConnection(ctx, h, c)
+				handler := factory.Create(ctx, c)
+				if handler == nil {
+					c.Close()
+				} else {
+					go s.handleConnection(ctx, handler, c)
+				}
 			}
 		}
 	}()
 
 	s.listener = l
-	s.log.Info("server started")
+	log.Info(s.host, ", server started")
 	return nil
 }
 
-func (s *server) handleConnection(ctx context.Context, handler func(p network.Pipeline) network.Pipeline, c net.Conn) {
+func (s *server) handleConnection(ctx context.Context, handler network.Handler, c net.Conn) {
 	chData := make(chan []byte)
 	chErr := make(chan error)
 	go func(chData chan []byte, chErr chan error) {
@@ -73,7 +79,8 @@ func (s *server) handleConnection(ctx context.Context, handler func(p network.Pi
 		}
 	}(chData, chErr)
 
-	channel := network.NewChannelWith(context.Background(), handler(network.NewPipeline()), c)
+	p := s.factory.Create(network.NewPipeline()).AddLast(handler)
+	channel := network.NewChannelWith(ctx, p, c)
 	defer channel.Close()
 
 	for {
@@ -91,8 +98,8 @@ func (s *server) handleConnection(ctx context.Context, handler func(p network.Pi
 }
 
 func (s *server) Shutdown() {
-	s.log.Info("shutdown server")
+	log.Info(s.host, ", shutdown server")
 	if err := s.listener.Close(); err != nil {
-		s.log.Warn("failed stop listener: ", err.Error())
+		log.Warn(s.host, ", failed stop listener: ", err.Error())
 	}
 }

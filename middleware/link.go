@@ -18,6 +18,6 @@ func NewLink(device ...Device) *link {
 	}
 }
 
-func (l* link) Send(report exchange.Report) {
-	l.exchange.Send(report)
+func (l* link) Send(source exchange.Source, report exchange.Report) {
+	l.exchange.Send(source, report)
 }

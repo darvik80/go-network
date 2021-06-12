@@ -3,19 +3,19 @@ package codec
 type Codec int
 
 const (
-	CodecUnknown Codec = iota
-	CodecSswDws
-	CodecSswPlc
+	Unknown Codec = iota
+	SswDws
+	SswPlc
 )
 
 func GetCodec(codec string) Codec {
 	switch codec {
 	case "SSW_DWS":
-		return CodecSswDws
+		return SswDws
 	case "SSW_PLC":
-		return CodecSswPlc
+		return SswPlc
 	}
 
-	return CodecUnknown
+	return Unknown
 }
 
