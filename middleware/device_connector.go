@@ -9,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net"
 	"strings"
-	"sync"
 )
 
 var logger = log.WithFields(log.Fields{"module": "server-connector"})
@@ -26,13 +25,14 @@ type info struct {
 }
 
 type serverDeviceConnector struct {
-	mu sync.Mutex
-	links map[string]*info
+	exchange exchange.Exchange
+	links    map[string]*info
 }
 
-func NewServerConnector() DeviceConnector {
+func NewServerConnector(exchange exchange.Exchange) DeviceConnector {
 	return &serverDeviceConnector{
-		links: make(map[string]*info),
+		exchange: exchange,
+		links:    make(map[string]*info),
 	}
 }
 
@@ -42,7 +42,7 @@ func (s *serverDeviceConnector) Connect(device Device) bool {
 			channel: tcp.NewServer(device.Address(), codec.NewPipelineFactory(device.Codec())),
 			devices: make(map[Device]bool),
 		}
-		rec.devices[device] = false
+		rec.devices[device] = true
 		s.links[device.Address()] = rec
 	} else {
 		rec.devices[device] = true
@@ -52,12 +52,10 @@ func (s *serverDeviceConnector) Connect(device Device) bool {
 }
 
 func (s *serverDeviceConnector) Start() error {
-	var mutex = &s.mu
+	var ex = s.exchange
 	for _, ch := range s.links {
 		info := ch
 		fn := network.HandlerFactoryFunc(func(ctx context.Context, conn net.Conn) network.Handler {
-			mutex.Lock()
-			defer mutex.Unlock()
 
 			var device Device
 			for dev := range info.devices {
@@ -82,16 +80,9 @@ func (s *serverDeviceConnector) Start() error {
 
 			return network.NewChannelInboundHandlerFunc(
 				func(ctx network.ActiveContext) {
-					mutex.Lock()
-					defer mutex.Unlock()
-
-					if active, found := info.devices[device]; found && active {
-						logger.Warn(device.Name(), " already connected: ", conn.RemoteAddr())
-						ctx.Close(nil)
-					} else {
-						info.devices[device] = true
-						logger.Warn(device.Name(), " active: ", conn.RemoteAddr())
-					}
+					logger.Warn(device.Name(), " active: ", conn.RemoteAddr())
+					device.SetChannel(ctx.Channel())
+					ctx.HandleActive()
 				},
 				func(ctx network.InboundContext, msg network.Message) {
 					if device != nil {
@@ -101,14 +92,14 @@ func (s *serverDeviceConnector) Start() error {
 						case exchange.DwsReport:
 							logger.Info(device.Name(), " DWS Id: ", m.Id)
 						}
+						(device.(exchange.Exchange)).Send(device, msg)
+						ex.Send(device, msg)
 					}
 				},
 				func(ctx network.InactiveContext, err error) {
-					mutex.Lock()
-					defer mutex.Unlock()
-
-					info.devices[device] = false
 					logger.Warn(device.Name(), " inactive: ", conn.RemoteAddr())
+					device.SetChannel(nil)
+					ctx.HandleInactive(err)
 				},
 			)
 		})
@@ -128,12 +119,14 @@ func (s *serverDeviceConnector) Shutdown() {
 }
 
 type clientDeviceConnector struct {
-	links map[string]*info
+	exchange exchange.Exchange
+	links    map[string]*info
 }
 
-func NewClientConnector() DeviceConnector {
+func NewClientConnector(exchange exchange.Exchange) DeviceConnector {
 	return &clientDeviceConnector{
-		links: make(map[string]*info),
+		exchange: exchange,
+		links:    make(map[string]*info),
 	}
 }
 
@@ -153,6 +146,7 @@ func (s *clientDeviceConnector) Connect(device Device) bool {
 }
 
 func (s *clientDeviceConnector) Start() error {
+	ex := s.exchange
 	for _, ch := range s.links {
 		info := ch
 		fn := network.HandlerFactoryFunc(func(ctx context.Context, conn net.Conn) network.Handler {
@@ -167,16 +161,29 @@ func (s *clientDeviceConnector) Start() error {
 				return nil
 			}
 
-			return func(ctx network.InboundContext, msg network.Message) {
-				if device != nil {
-					switch m := msg.(type) {
-					case exchange.SortReport:
-						logger.Infof("%s, Sort, Id: %d, ChuteId: %d", device.Name(), m.Id, m.ChuteId)
-					case exchange.DwsReport:
-						logger.Infof("%s, DWS Id: %d", device.Name(), m.Id)
+			return network.NewChannelInboundHandlerFunc(
+				func(ctx network.ActiveContext) {
+					logger.Info(device.Name(), " active: ", conn.RemoteAddr())
+					device.SetChannel(ctx.Channel())
+					ctx.HandleActive()
+				},
+				func(ctx network.InboundContext, msg network.Message) {
+					if device != nil {
+						switch m := msg.(type) {
+						case exchange.SortReport:
+							logger.Infof("%s, Sort, Id: %d, ChuteId: %d", device.Name(), m.Id, m.ChuteId)
+						case exchange.DwsReport:
+							logger.Infof("%s, DWS Id: %d", device.Name(), m.Id)
+						}
+						ex.Send(device, msg)
 					}
-				}
-			}
+				},
+				func(ctx network.InactiveContext, err error) {
+					logger.Info(device.Name(), " inactive: ", conn.RemoteAddr())
+					device.SetChannel(nil)
+					ctx.HandleInactive(err)
+				},
+			)
 		})
 
 		if err := ch.channel.Start(fn); err != nil {

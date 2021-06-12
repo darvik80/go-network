@@ -13,12 +13,12 @@ func adapter(h Handler) Handler {
 	}
 }
 
-type Source interface {}
+type Source interface{}
 
-type Report interface {}
+type Report interface{}
 
 type DwsReport struct {
-	Id     int16
+	Id     int
 	Width  float64
 	Weight float64
 	Height float64

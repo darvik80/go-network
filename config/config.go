@@ -19,7 +19,7 @@ type Config struct {
 	RocketMQ struct {
 		Nameserver string `yaml:"name-server"`
 	} `yaml:"rocket-mq"`
-	Links []middleware.DeviceConfig `yaml:"links"`
+	Links []middleware.LinkConfig `yaml:"links"`
 }
 
 func readConfig(r io.Reader, cfg *Config) error {

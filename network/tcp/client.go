@@ -10,10 +10,10 @@ import (
 )
 
 type client struct {
-	host   string
-	log    log.FieldLogger
-	ctx    context.Context
-	cancel context.CancelFunc
+	host    string
+	log     log.FieldLogger
+	ctx     context.Context
+	cancel  context.CancelFunc
 	factory network.PipelineFactory
 }
 
@@ -42,9 +42,7 @@ func (c *client) Start(factory network.HandlerFactory) error {
 				c.log.Warnf(err.Error())
 				time.Sleep(time.Second)
 			} else {
-				c.handleConnection(c.ctx, factory, conn)
-				select {
-				case <-c.ctx.Done():
+				if !c.handleConnection(c.ctx, factory, conn) {
 					return
 				}
 			}
@@ -55,7 +53,7 @@ func (c *client) Start(factory network.HandlerFactory) error {
 	return nil
 }
 
-func (s *client) handleConnection(ctx context.Context, hf network.HandlerFactory , c net.Conn) {
+func (s *client) handleConnection(ctx context.Context, hf network.HandlerFactory, c net.Conn) bool {
 	chData := make(chan []byte)
 	chErr := make(chan error)
 	go func(chData chan []byte, chErr chan error) {
@@ -74,19 +72,19 @@ func (s *client) handleConnection(ctx context.Context, hf network.HandlerFactory
 	}(chData, chErr)
 
 	p := s.factory.Create(network.NewPipeline()).AddLast(hf.Create(ctx, c))
-	channel := network.NewChannelWith(context.Background(), p, c)
+	channel := network.NewChannelWith(ctx, p, c)
 	defer channel.Close()
 
 	for {
 		select {
 		case <-ctx.Done():
 			channel.Pipeline().FireChannelError(c.Close())
-			return
+			return false
 		case data := <-chData:
 			channel.Pipeline().FireChannelRead(data)
 		case err := <-chErr:
 			channel.Pipeline().FireChannelError(err)
-			return
+			return true
 		}
 	}
 }

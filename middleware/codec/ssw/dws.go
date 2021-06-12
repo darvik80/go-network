@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func DwsEncoder(ctx network.InboundContext, msg network.Message) {
+func DwsDecoder(ctx network.InboundContext, msg network.Message) {
 	report := string(msg.([]byte))
 	parts := strings.Split(report, ";;")
 	if len(parts) == 2 {
@@ -16,11 +16,7 @@ func DwsEncoder(ctx network.InboundContext, msg network.Message) {
 		if err != nil {
 			return
 		}
-		chuteId, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return
-		}
-		ctx.HandleRead(exchange.SortReport{Id: id, ChuteId: chuteId})
+		ctx.HandleRead(exchange.DwsReport{Id: id, Width: 10.0, Weight: 20.0, Height: 30.0, Length: 40.0})
 	}
 }
 
@@ -29,7 +25,7 @@ func DwsPipeline(p network.Pipeline) network.Pipeline {
 		network.NewLogger(),
 		network.ReadIdleHandler(time.Second*60),
 		network.NewLineBase(),
-		DwsEncoder,
+		DwsDecoder,
 	)
 
 	return p

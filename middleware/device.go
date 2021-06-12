@@ -1,6 +1,12 @@
 package middleware
 
-import "darvik80/go-network/middleware/codec"
+import (
+	"darvik80/go-network/exchange"
+	"darvik80/go-network/middleware/codec"
+	"darvik80/go-network/network"
+	log "github.com/sirupsen/logrus"
+	"sync"
+)
 
 type DeviceMode int
 
@@ -26,16 +32,27 @@ type Device interface {
 	Mode() DeviceMode
 	Codec() codec.Codec
 	Name() string
-}
 
-func NewDevice(cfg DeviceConfig) *simpleDevice {
-	return &simpleDevice{
-		cfg: cfg,
-	}
+	SetChannel(channel network.Channel)
+	SendToChannel(msg interface{})
 }
 
 type simpleDevice struct {
-	cfg DeviceConfig
+	exchange.Exchange
+	cfg     DeviceConfig
+	mutex   sync.Mutex
+	channel network.Channel
+}
+
+func NewDevice(cfg DeviceConfig, exchange exchange.Exchange) Device {
+	switch cfg.Type {
+	case "dws":
+		return NewDwsDevice(cfg, exchange)
+	case "plc":
+		return NewPlcDevice(cfg, exchange)
+	default:
+		return nil
+	}
 }
 
 func (d *simpleDevice) Address() string {
@@ -56,4 +73,20 @@ func (d *simpleDevice) Codec() codec.Codec {
 
 func (d *simpleDevice) Name() string {
 	return d.cfg.Name
+}
+
+func (d *simpleDevice) SetChannel(channel network.Channel) {
+	d.mutex.Lock()
+	d.channel = channel
+	d.mutex.Unlock()
+}
+
+func (d *simpleDevice) SendToChannel(msg interface{}) {
+	d.mutex.Lock()
+	if d.channel != nil {
+		d.channel.Write(msg)
+	} else {
+		log.WithFields(log.Fields{"module": "dev"}).Warn(d.Name(), " drop message, no connection")
+	}
+	d.mutex.Unlock()
 }

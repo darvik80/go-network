@@ -1,14 +1,17 @@
 rocket-mq:
   name-server: 127.0.0.1:9876
 links:
-  - link:
+  - link: lane01
+    devices:
     - name: dws01
+      type: dws
       address: 127.0.0.1:8000
       mode: SERVER
       codec: SSW_DWS
       allowed-addresses:
       - 127.0.0.1
-    - name: plc1
+    - name: plc01
+      type: plc
       address: 127.0.0.1:5000
       mode: CLIENT
       codec: SSW_PLC

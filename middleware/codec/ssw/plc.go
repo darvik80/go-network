@@ -3,24 +3,17 @@ package ssw
 import (
 	"darvik80/go-network/exchange"
 	"darvik80/go-network/network"
-	"strconv"
-	"strings"
+	"fmt"
 	"time"
 )
 
-func PlcEncoder(ctx network.InboundContext, msg network.Message) {
-	report := string(msg.([]byte))
-	parts := strings.Split(report, ";;")
-	if len(parts) == 2 {
-		id, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return
-		}
-		chuteId, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return
-		}
-		ctx.HandleRead(exchange.SortReport{Id: id, ChuteId: chuteId})
+func PlcEncoder(ctx network.OutboundContext, msg network.Message) {
+	switch m := msg.(type) {
+	case exchange.SortReport:
+		str := fmt.Sprintf("%d;;%d\r\n", m.Id, m.ChuteId)
+		ctx.Write([]byte(str))
+	default:
+		break
 	}
 }
 
