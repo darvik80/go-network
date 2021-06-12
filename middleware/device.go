@@ -1,5 +1,7 @@
 package middleware
 
+import "darvik80/go-network/middleware/codec"
+
 type DeviceMode int
 
 const (
@@ -18,29 +20,10 @@ func GetDeviceMode(mode string) DeviceMode {
 	return CLIENT
 }
 
-type Codec int
-
-const (
-	CodecUnknown Codec = iota
-	CodecSswDws
-	CodecSswPlc
-)
-
-func GetCodec(codec string) Codec {
-	switch codec {
-	case "SSW_DWS":
-		return CodecSswDws
-	case "SSW_PLC":
-		return CodecSswPlc
-	}
-
-	return CodecUnknown
-}
-
 type Device interface {
 	Address() string
 	Mode() DeviceMode
-	Codec() Codec
+	Codec() codec.Codec
 	Name() string
 }
 
@@ -62,8 +45,8 @@ func (d *simpleDevice) Mode() DeviceMode {
 	return GetDeviceMode(d.cfg.Mode)
 }
 
-func (d *simpleDevice) Codec() Codec {
-	return GetCodec(d.cfg.Codec)
+func (d *simpleDevice) Codec() codec.Codec {
+	return codec.GetCodec(d.cfg.Codec)
 }
 
 func (d *simpleDevice) Name() string {

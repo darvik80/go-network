@@ -1,9 +1,7 @@
 package middleware
 
 import (
-	"darvik80/go-network/middleware/codec"
 	"darvik80/go-network/network"
-	"darvik80/go-network/network/tcp"
 )
 
 type DeviceConnector interface {
@@ -32,8 +30,8 @@ func NewServerConnector() DeviceConnector {
 func (s *serverDeviceConnector) Connect(device Device) bool {
 	if _, found := s.channels[device.Address()]; !found {
 		s.channels[device.Address()] = &channelInfo{
-			tcp.NewServer(device.Address()),
-			codec.NewPipeline(device.Codec()),
+			nil, //tcp.NewServer(device.Address()),
+			nil, //codec.NewPipeline(device.Codec()),
 		}
 		s.devices[device] = true
 	}
@@ -42,11 +40,11 @@ func (s *serverDeviceConnector) Connect(device Device) bool {
 }
 
 func (s *serverDeviceConnector) Start() error {
-	for _, ch := range s.channels {
-		ch.transport.Start(ch.factory().)
-	}
-}
-return nil
+	//for _, ch := range s.channels {
+	//	ch.transport.Start(ch.factory().)
+	//}
+
+	return nil
 }
 
 func (s *serverDeviceConnector) Shutdown() {

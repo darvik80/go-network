@@ -1,12 +1,5 @@
 package middleware
 
-import (
-	"darvik80/go-network/network"
-	"darvik80/go-network/network/tcp"
-	log "github.com/sirupsen/logrus"
-	"strconv"
-)
-
 type middleware struct {
 	links []Link
 	serverConnector DeviceConnector
@@ -55,11 +48,11 @@ func NewMiddleware(config []DeviceConfig) (*middleware, error) {
 }
 
 func (mid *middleware) Shutdown() {
-	for _, server := range mid.servers {
-		server.Shutdown()
-	}
-
-	for _, client := range mid.clients {
-		client.Shutdown()
-	}
+	//for _, server := range mid.servers {
+	//	server.Shutdown()
+	//}
+	//
+	//for _, client := range mid.clients {
+	//	client.Shutdown()
+	//}
 }

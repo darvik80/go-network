@@ -2,8 +2,7 @@ package tcp
 
 import (
 	"context"
-	"darvik80/go-network/middleware"
-	"github.com/darvik80/go-network/network"
+	"darvik80/go-network/network"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
@@ -14,8 +13,6 @@ type server struct {
 	listener net.Listener
 	log      log.FieldLogger
 	ctx      context.Context
-
-	devices map[string]middleware.Device
 }
 
 func NewServer(host string) *server {
@@ -28,13 +25,7 @@ func NewServer(host string) *server {
 				"addr":   host,
 			}),
 		context.Background(),
-
-		make(map[string]middleware.Device),
 	}
-}
-
-func (s *server) Attach(d middleware.Device) {
-
 }
 
 func (s *server) Start(h func(p network.Pipeline) network.Pipeline) error {

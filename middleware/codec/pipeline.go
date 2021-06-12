@@ -1,14 +1,13 @@
 package codec
 
 import (
-	"darvik80/go-network/middleware"
 	"darvik80/go-network/network"
 	"time"
 )
 
-func NewPipeline(h network.Handler, codec middleware.Codec) func(p network.Pipeline) network.Pipeline {
+func NewPipeline(h network.Handler, codec Codec) func(p network.Pipeline) network.Pipeline {
 	switch codec {
-	case middleware.CodecSswDws:
+	case CodecSswDws:
 		return func(p network.Pipeline) network.Pipeline {
 			p.AddLast(
 				network.NewLogger(),
@@ -17,7 +16,7 @@ func NewPipeline(h network.Handler, codec middleware.Codec) func(p network.Pipel
 
 			return p
 		}
-	case middleware.CodecSswPlc:
+	case CodecSswPlc:
 		return nil
 	}
 
