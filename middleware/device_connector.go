@@ -92,8 +92,8 @@ func (s *serverDeviceConnector) Start() error {
 						case exchange.DwsReport:
 							logger.Info(device.Name(), " DWS Id: ", m.Id)
 						}
-						(device.(exchange.Exchange)).Send(device, msg)
-						ex.Send(device, msg)
+						(device.(exchange.Exchange)).Publish(device, msg)
+						ex.Publish(device, msg)
 					}
 				},
 				func(ctx network.InactiveContext, err error) {
@@ -175,7 +175,7 @@ func (s *clientDeviceConnector) Start() error {
 						case exchange.DwsReport:
 							logger.Infof("%s, DWS Id: %d", device.Name(), m.Id)
 						}
-						ex.Send(device, msg)
+						ex.Publish(device, msg)
 					}
 				},
 				func(ctx network.InactiveContext, err error) {

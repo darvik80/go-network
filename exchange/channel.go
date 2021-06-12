@@ -54,7 +54,7 @@ func (e *channel) process() {
 	}
 }
 
-func (e *channel) Send(source Source, msg Report) {
+func (e *channel) Publish(source Source, msg Report) {
 	e.ch <- message{ source, msg }
 }
 

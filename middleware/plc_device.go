@@ -30,10 +30,10 @@ func NewPlcDevice(cfg DeviceConfig, ex exchange.Exchange) *plcDevice {
 
 func (d *plcDevice) onDwsMessage(source Device, report exchange.DwsReport) {
 	log.WithFields(log.Fields{"module": "plc"}).Info(source.Name(), " DWSReport")
-	d.Send(d, exchange.SortReport{Id: report.Id, ChuteId: 10})
+	d.Publish(d, exchange.SortReport{Id: report.Id, ChuteId: 10})
 }
 
 func (d *plcDevice) onPlcMessage(source Device, report exchange.SortReport) {
 	log.WithFields(log.Fields{"module": "plc"}).Info(source.Name(), " PlcReport")
-	d.SendToChannel(report)
+	d.send(report)
 }

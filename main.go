@@ -45,11 +45,11 @@ func main() {
 	//	log.Info("[exc] handle Sort Report")
 	//})
 	//
-	//ex.Send(exchange.SortReport{})
-	//ex.Send(exchange.DwsReport{})
-	//ex.Send(exchange.SortReport{})
-	//ex.Send(exchange.SortReport{})
-	//ex.Send(exchange.SortReport{})
+	//ex.Publish(exchange.SortReport{})
+	//ex.Publish(exchange.DwsReport{})
+	//ex.Publish(exchange.SortReport{})
+	//ex.Publish(exchange.SortReport{})
+	//ex.Publish(exchange.SortReport{})
 	//
 	//defer ex.Shutdown()
 

@@ -34,7 +34,6 @@ type Device interface {
 	Name() string
 
 	SetChannel(channel network.Channel)
-	SendToChannel(msg interface{})
 }
 
 type simpleDevice struct {
@@ -81,7 +80,7 @@ func (d *simpleDevice) SetChannel(channel network.Channel) {
 	d.mutex.Unlock()
 }
 
-func (d *simpleDevice) SendToChannel(msg interface{}) {
+func (d *simpleDevice) send(msg interface{}) {
 	d.mutex.Lock()
 	if d.channel != nil {
 		d.channel.Write(msg)

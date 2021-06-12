@@ -19,5 +19,5 @@ func NewLink(device ...Device) *link {
 }
 
 func (l *link) Send(source exchange.Source, report exchange.Report) {
-	l.exchange.Send(source, report)
+	l.exchange.Publish(source, report)
 }
