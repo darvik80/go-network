@@ -45,6 +45,13 @@ spec:
     spec:
       containers:
         - name: rmqnamesrv
+          resources:
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
           imagePullPolicy: IfNotPresent
           image: apacherocketmq/rocketmq:4.5.0
           ports:
@@ -54,7 +61,7 @@ spec:
             - name: TZ
               value: "Asia/Shanghai"
             - name: JAVA_OPT_EXT
-              value: "-Duser.home=/home/rocketmq -Xms512m -Xmx512m -Xmn128m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m"
+              value: "-Duser.home=/home/rocketmq -Xms128m -Xmx128m -Xmn64m -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=64m"
           command: ["/bin/sh", "mqnamesrv"]
 ---
 apiVersion: v1
@@ -90,6 +97,13 @@ spec:
     spec:
       containers:
         - name: rmqbroker
+          resources:
+            limits:
+              cpu: "250m"
+              memory: "512Mi"
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
           imagePullPolicy: IfNotPresent
           image: apacherocketmq/rocketmq:4.5.0
           ports:
@@ -99,7 +113,7 @@ spec:
             - name: TZ
               value: "Asia/Shanghai"
             - name: JAVA_OPT_EXT
-              value: "-Duser.home=/home/rocketmq -Xms512m -Xmx512m -Xmn128m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m"
+              value: "-Duser.home=/home/rocketmq -Xms128m -Xmx128m -Xmn64m -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=64m"
           command: ["/bin/sh", "mqbroker"]
           args: ["-n", "rmqnamesrv:9876", "-c","/home/rocketmq/broker.conf/broker.properties"]
           volumeMounts:

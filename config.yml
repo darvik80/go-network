@@ -5,14 +5,14 @@ links:
     devices:
     - name: dws01
       type: dws
-      address: 127.0.0.1:8000
+      address: 0.0.0.0:8000
       mode: SERVER
       codec: SSW_DWS
-      allowed-addresses:
-      - 127.0.0.1
+#      allowed-addresses:
+#      - 127.0.0.1
     - name: plc01
       type: plc
-      address: 127.0.0.1:5000
-      mode: CLIENT
+      address: 0.0.0.0:5000
+      mode: SERVER
       codec: SSW_PLC
 

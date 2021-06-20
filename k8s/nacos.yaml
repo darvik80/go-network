@@ -40,3 +40,5 @@ spec:
               value: hostname
             - name: MODE
               value: standalone
+            - name: JAVA_OPT_EXT
+              value: "-Xms512m -Xmx512m -Xmn128m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m"
