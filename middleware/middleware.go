@@ -73,7 +73,7 @@ func NewMiddleware(opts ...Option) (*middleware, error) {
 
 	for _, linkConfig := range options.links {
 		var devices []Device
-		linkEx := exchange.NewChanExchange(1024, 8)
+		linkEx := exchange.NewChanExchange(linkConfig.Name, 1024, 8)
 		for _, deviceConfig := range linkConfig.Devices {
 			device := NewDevice(linkConfig.Id, deviceConfig, linkEx)
 			switch device.Mode() {
@@ -89,7 +89,7 @@ func NewMiddleware(opts ...Option) (*middleware, error) {
 	}
 
 	for _, deviceConfig := range options.devices {
-		linkEx := exchange.NewChanExchange(1024, 8)
+		linkEx := exchange.NewChanExchange(deviceConfig.Name, 1024, 8)
 		device := NewDevice(0, deviceConfig, linkEx)
 		switch device.Mode() {
 		case SERVER:

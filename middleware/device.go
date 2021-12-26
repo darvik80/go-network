@@ -88,7 +88,7 @@ type dwsDevice struct {
 }
 
 func NewDwsDevice(id int, cfg DeviceConfig, ex exchange.Exchange) *dwsDevice {
-	log.WithFields(log.Fields{"module": "dws"}).Infof("Register DWS: %s", cfg.Name)
+	log.WithFields(log.Fields{"device": "dws"}).Infof("registered: %s", cfg.Name)
 
 	dev := &dwsDevice{
 		simpleDevice{
@@ -106,7 +106,7 @@ func NewDwsDevice(id int, cfg DeviceConfig, ex exchange.Exchange) *dwsDevice {
 }
 
 func (d *dwsDevice) onDwsMessage(source Device, report exchange.StdDwsReport) {
-	log.WithFields(log.Fields{"module": "dws"}).Info(source.Name(), " DWSReport")
+	log.WithFields(log.Fields{"device": "dws"}).Info(source.Name(), " DWSReport")
 	d.Send(report)
 }
 
@@ -125,7 +125,7 @@ func NewPlcDevice(id int, cfg DeviceConfig, ex exchange.Exchange) *plcDevice {
 		},
 	}
 
-	log.WithFields(log.Fields{"module": "plc"}).Infof("Register PLC: %s", cfg.Name)
+	log.WithFields(log.Fields{"device": "plc"}).Infof("registered: %s", cfg.Name)
 
 	return dev
 }
@@ -143,7 +143,7 @@ func NewScadaDevice(id int, cfg DeviceConfig, ex exchange.Exchange) *scadaDevice
 		},
 	}
 
-	log.WithFields(log.Fields{"module": "scada"}).Infof("Register SCADA: %s", cfg.Name)
+	log.WithFields(log.Fields{"device": "scada"}).Infof("registered: %s", cfg.Name)
 
 	return dev
 }

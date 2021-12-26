@@ -8,6 +8,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io"
 	"os"
@@ -106,11 +107,13 @@ func ReadConfig() (*Config, error) {
 	cfg := &Config{}
 	err := ReadFileConfig(DefaultDataId, cfg)
 	if err != nil {
+		log.WithFields(log.Fields{"module": "cfg"}).Infof("create faled: %e", err)
 		return nil, err
 	}
 
 	err = ReadCloudConfig(DefaultDataId, cfg)
 	if err != nil {
+		log.WithFields(log.Fields{"module": "cfg"}).Warnf("get cloud cfg faled: %s", err)
 		return cfg, err
 	}
 

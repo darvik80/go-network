@@ -57,7 +57,7 @@ func (s *server) Start(factory network.HandlerFactory) error {
 	}()
 
 	s.listener = l
-	log.Info(s.host, ", server started")
+	log.WithFields(log.Fields{"network": "tcp-server"}).Info(s.host, ", started")
 	return nil
 }
 
@@ -98,8 +98,8 @@ func (s *server) handleConnection(ctx context.Context, handler network.Handler, 
 }
 
 func (s *server) Shutdown() {
-	log.Info(s.host, ", shutdown server")
+	log.WithFields(log.Fields{"network": "tcp-server"}).Info(s.host, ", shutdown")
 	if err := s.listener.Close(); err != nil {
-		log.Warn(s.host, ", failed stop listener: ", err.Error())
+		log.WithFields(log.Fields{"network": "tcp-server"}).Warn(s.host, ", failed stop listener: ", err.Error())
 	}
 }

@@ -39,22 +39,20 @@ func NewApp() (Application, error) {
 	var a app
 	var err error
 	if a.cfg, err = config.ReadConfig(); err != nil && a.cfg == nil {
-		log.Error("failed read config ", err)
 		return nil, err
 	}
 
 	if a.db, err = database.NewDb(a.cfg.DataSource); err != nil {
-		log.Error("failed open database ", err)
 		return nil, err
 	}
 
 	if a.eventbus, err = eventbus.NewProducer(a.cfg.Eventbus); err != nil {
-		log.Error("failed open rmq ", err)
 		return nil, err
 	}
 
-	a.exchange = exchange.NewChanExchange(1024, 8)
+	a.exchange = exchange.NewChanExchange("global", 1024, 8)
 
+	log.WithFields(log.Fields{"module": "main"}).Info("created")
 	return &a, nil
 }
 

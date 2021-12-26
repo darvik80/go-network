@@ -1,6 +1,9 @@
 package exchange
 
-import "container/list"
+import (
+	"container/list"
+	log "github.com/sirupsen/logrus"
+)
 
 type message struct {
 	source Source
@@ -8,12 +11,14 @@ type message struct {
 }
 
 type channel struct {
+	name     string
 	ch       chan message
 	handlers *list.List
 }
 
-func NewChanExchange(bufSize, routines int) *channel {
+func NewChanExchange(name string, bufSize, routines int) *channel {
 	ex := &channel{
+		name:     name,
 		ch:       make(chan message, bufSize),
 		handlers: list.New(),
 	}
@@ -25,6 +30,7 @@ func NewChanExchange(bufSize, routines int) *channel {
 		go ex.process()
 	}
 
+	log.WithFields(log.Fields{"module": "exchange", "name": name}).Info("created")
 	return ex
 }
 
