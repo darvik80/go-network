@@ -1,6 +1,8 @@
 package config
 
 import (
+	"darvik80/go-network/database"
+	"darvik80/go-network/eventbus"
 	"darvik80/go-network/middleware"
 	"fmt"
 	"github.com/nacos-group/nacos-sdk-go/clients"
@@ -19,7 +21,10 @@ type Config struct {
 	RocketMQ struct {
 		Nameserver string `yaml:"name-server"`
 	} `yaml:"rocket-mq"`
-	Links []middleware.LinkConfig `yaml:"links"`
+	Links      []middleware.LinkConfig   `yaml:"links"`
+	Devices    []middleware.DeviceConfig `yaml:"devices"`
+	DataSource database.DataSourceConfig `yaml:"data-source"`
+	Eventbus   eventbus.RmqConfig        `yaml:"event-bus"`
 }
 
 func readConfig(r io.Reader, cfg *Config) error {

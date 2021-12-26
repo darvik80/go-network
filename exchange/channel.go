@@ -4,7 +4,7 @@ import "container/list"
 
 type message struct {
 	source Source
-	report Report
+	msg    Message
 }
 
 type channel struct {
@@ -33,18 +33,39 @@ func (e *channel) process() {
 		select {
 		case msg, ok := <-e.ch:
 			if ok {
-				switch m := msg.report.(type) {
-				case DwsReport:
+				switch m := msg.msg.(type) {
+				case StdDwsReport:
 					for h := e.handlers.Front(); h != nil; h = h.Next() {
 						switch handler := h.Value.(type) {
-						case HandlerDwsReport:
+						case StdHandlerDwsReport:
 							handler.OnMessage(msg.source, m)
 						}
 					}
-				case SortReport:
+				case StdDwsSortReport:
 					for h := e.handlers.Front(); h != nil; h = h.Next() {
 						switch handler := h.Value.(type) {
-						case HandlerSortReport:
+						case StdHandlerDwsSortReport:
+							handler.OnMessage(msg.source, m)
+						}
+					}
+				case StdHeartbeat:
+					for h := e.handlers.Front(); h != nil; h = h.Next() {
+						switch handler := h.Value.(type) {
+						case StdHandlerHeartbeat:
+							handler.OnMessage(msg.source, m)
+						}
+					}
+				case StdKeepAliveRequest:
+					for h := e.handlers.Front(); h != nil; h = h.Next() {
+						switch handler := h.Value.(type) {
+						case StdHandlerKeepAliveRequest:
+							handler.OnMessage(msg.source, m)
+						}
+					}
+				case StdKeepAliveResponse:
+					for h := e.handlers.Front(); h != nil; h = h.Next() {
+						switch handler := h.Value.(type) {
+						case StdHandlerKeepAliveResponse:
 							handler.OnMessage(msg.source, m)
 						}
 					}
@@ -54,8 +75,8 @@ func (e *channel) process() {
 	}
 }
 
-func (e *channel) Publish(source Source, msg Report) {
-	e.ch <- message{ source, msg }
+func (e *channel) Publish(source Source, msg Message) {
+	e.ch <- message{source, msg}
 }
 
 func (e *channel) Subscribe(handler Handler) {

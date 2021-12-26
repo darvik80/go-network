@@ -4,44 +4,93 @@ type Handler interface{}
 
 func adapter(h Handler) Handler {
 	switch item := h.(type) {
-	case func(source Source, report DwsReport):
-		return HandlerDwsReportFunc(item)
-	case func(source Source, report SortReport):
-		return HandlerSortReportFunc(item)
+	case func(source Source, report StdDwsReport):
+		return StdHandlerDwsReportFunc(item)
+	case func(source Source, report StdSortReport):
+		return StdHandlerSortReportFunc(item)
+	case func(source Source, report StdDwsSortReport):
+		return StdHandlerDwsSortReportFunc(item)
+	case func(source Source, msg StdKeepAliveRequest):
+		return StdHandlerKeepAliveRequestFunc(item)
+	case func(source Source, msg StdKeepAliveResponse):
+		return StdHandlerKeepAliveResponseFunc(item)
+	case func(source Source, msg StdHeartbeat):
+		return StdHandlerHeartbeatFunc(item)
 	default:
 		return h
 	}
 }
 
-type Source interface{}
-
-type Report interface{}
-
-type DwsReport struct {
-	Id     int
-	Width  float64
-	Weight float64
-	Height float64
-	Length float64
+type Source interface {
+	Name() string
 }
 
-type HandlerDwsReport interface {
-	OnMessage(source Source, report DwsReport)
+type Message interface{}
+
+type StdHandlerDwsReport interface {
+	OnMessage(source Source, report StdDwsReport)
 }
 
-type HandlerDwsReportFunc func(source Source, report DwsReport)
+type StdHandlerDwsReportFunc func(source Source, report StdDwsReport)
 
-func (fn HandlerDwsReportFunc) OnMessage(source Source, report DwsReport) { fn(source, report) }
+func (fn StdHandlerDwsReportFunc) OnMessage(source Source, report StdDwsReport) { fn(source, report) }
 
-type SortReport struct {
-	Id      int
-	ChuteId int
+type StdHandlerSortRequest interface {
+	OnMessage(source Source, report StdSortRequest)
 }
 
-type HandlerSortReport interface {
-	OnMessage(source Source, report SortReport)
+type StdHandlerSortRequestFunc func(source Source, report StdSortRequest)
+
+func (fn StdHandlerSortRequestFunc) OnMessage(source Source, report StdSortRequest) {
+	fn(source, report)
 }
 
-type HandlerSortReportFunc func(source Source, report SortReport)
+type StdHandlerSortReport interface {
+	OnMessage(source Source, report StdDwsSortReport)
+}
 
-func (fn HandlerSortReportFunc) OnMessage(source Source, report SortReport) { fn(source, report) }
+type StdHandlerSortReportFunc func(source Source, report StdSortReport)
+
+func (fn StdHandlerSortReportFunc) OnMessage(source Source, report StdSortReport) {
+	fn(source, report)
+}
+
+type StdHandlerDwsSortReport interface {
+	OnMessage(source Source, report StdDwsSortReport)
+}
+
+type StdHandlerDwsSortReportFunc func(source Source, report StdDwsSortReport)
+
+func (fn StdHandlerDwsSortReportFunc) OnMessage(source Source, report StdDwsSortReport) {
+	fn(source, report)
+}
+
+type StdHandlerKeepAliveRequest interface {
+	OnMessage(source Source, report StdKeepAliveRequest)
+}
+
+type StdHandlerKeepAliveRequestFunc func(source Source, msg StdKeepAliveRequest)
+
+func (fn StdHandlerKeepAliveRequestFunc) OnMessage(source Source, report StdKeepAliveRequest) {
+	fn(source, report)
+}
+
+type StdHandlerKeepAliveResponse interface {
+	OnMessage(source Source, report StdKeepAliveResponse)
+}
+
+type StdHandlerKeepAliveResponseFunc func(source Source, msg StdKeepAliveResponse)
+
+func (fn StdHandlerKeepAliveResponseFunc) OnMessage(source Source, msg StdKeepAliveResponse) {
+	fn(source, msg)
+}
+
+type StdHandlerHeartbeat interface {
+	OnMessage(source Source, report StdHeartbeat)
+}
+
+type StdHandlerHeartbeatFunc func(source Source, msg StdHeartbeat)
+
+func (fn StdHandlerHeartbeatFunc) OnMessage(source Source, msg StdHeartbeat) {
+	fn(source, msg)
+}

@@ -1,18 +1,31 @@
-rocket-mq:
-  name-server: 127.0.0.1:9876
+data-source:
+  host: 127.0.0.1
+  port: 5432
+  username: postgres
+  password: 1234
+  database: postgres
 links:
   - link: lane01
+    id: 1
+    type: direct
     devices:
-    - name: dws01
-      type: dws
-      address: 0.0.0.0:8000
-      mode: SERVER
-      codec: SSW_DWS
-#      allowed-addresses:
-#      - 127.0.0.1
-    - name: plc01
-      type: plc
-      address: 0.0.0.0:5000
-      mode: SERVER
-      codec: SSW_PLC
+      - name: dws01
+        type: dws
+        address: 0.0.0.0:9001
+        mode: server
+        codec: SSW_DWS
+      - name: plc01
+        type: plc
+        address: 0.0.0.0:9002
+        mode: server
+        codec: SSW_PLC
+devices:
+  - name: scada
+    type: scada
+    address: 0.0.0.0:10000
+    mode: server
+    codec: SJF_SCADA
+event-bus:
+  name-server: 127.0.0.1:9876
+  topic: EVENT_BUS
 

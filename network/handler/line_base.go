@@ -1,20 +1,21 @@
-package network
+package handler
 
 import (
 	"bufio"
 	"bytes"
+	"darvik80/go-network/network"
 	"io"
 )
 
 type line struct {
-	line      []byte
+	line []byte
 }
 
-func NewLineBase() InboundHandler {
+func NewLineBase() network.InboundHandler {
 	return &line{}
 }
 
-func (c *line) HandleRead(ctx InboundContext, msg Message) {
+func (c *line) HandleRead(ctx network.InboundContext, msg network.Message) {
 	switch data := msg.(type) {
 	case []byte:
 		c.line = append(c.line, data...)

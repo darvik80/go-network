@@ -1,6 +1,7 @@
-package network
+package handler
 
 import (
+	"darvik80/go-network/network"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"strings"
@@ -52,7 +53,7 @@ func NewLogger() *logger {
 	return &logger{log.WithFields(log.Fields{"module": "logger"})}
 }
 
-func (l *logger) HandleActive(ctx ActiveContext) {
+func (l *logger) HandleActive(ctx network.ActiveContext) {
 	l.log = log.WithFields(log.Fields{
 		"module": "logger",
 		"addr":   ctx.Channel().RemoteAddr().String(),
@@ -62,7 +63,7 @@ func (l *logger) HandleActive(ctx ActiveContext) {
 	ctx.HandleActive()
 }
 
-func (l *logger) HandleInactive(ctx InactiveContext, err error) {
+func (l *logger) HandleInactive(ctx network.InactiveContext, err error) {
 	l.log.Info("inactive")
 	ctx.HandleInactive(err)
 }
@@ -115,7 +116,7 @@ func dump(data []byte) string {
 	return b.String()
 }
 
-func (l *logger) HandleWrite(ctx OutboundContext, msg Message) {
+func (l *logger) HandleWrite(ctx network.OutboundContext, msg network.Message) {
 	switch data := msg.(type) {
 	case []byte:
 		l.log.Info(fmt.Sprintf("send: (%d) %s\r\n%s\r\n", len(data), data, dump(data)))
@@ -124,7 +125,7 @@ func (l *logger) HandleWrite(ctx OutboundContext, msg Message) {
 	ctx.HandleWrite(msg)
 }
 
-func (l *logger) HandleRead(ctx InboundContext, msg Message) {
+func (l *logger) HandleRead(ctx network.InboundContext, msg network.Message) {
 	switch data := msg.(type) {
 	case []byte:
 		l.log.Infof("read: (%d) %s\r\n%s\r\n", len(data), data, dump(data))

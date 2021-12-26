@@ -29,7 +29,7 @@ type serverDeviceConnector struct {
 	links    map[string]*info
 }
 
-func NewServerConnector(exchange exchange.Exchange) DeviceConnector {
+func NewServerConnector(exchange exchange.Exchange) *serverDeviceConnector {
 	return &serverDeviceConnector{
 		exchange: exchange,
 		links:    make(map[string]*info),
@@ -86,11 +86,27 @@ func (s *serverDeviceConnector) Start() error {
 				},
 				func(ctx network.InboundContext, msg network.Message) {
 					if device != nil {
+						var std *exchange.StdMessage
 						switch m := msg.(type) {
-						case exchange.SortReport:
-							logger.Info(device.Name(), " Sort, Id: ", m.Id, ", ChuteId: ", m.ChuteId)
-						case exchange.DwsReport:
-							logger.Info(device.Name(), " DWS Id: ", m.Id)
+						case exchange.StdDwsReport:
+							std = &m.StdMessage
+						case exchange.StdSortReport:
+							std = &m.StdMessage
+						case exchange.StdDwsSortReport:
+							std = &m.StdMessage
+						case exchange.StdHeartbeat:
+							std = &m.StdMessage
+						case exchange.StdKeepAliveRequest:
+							std = &m.StdMessage
+						case exchange.StdKeepAliveResponse:
+							std = &m.StdMessage
+						}
+						if std != nil {
+							std.Device = device
+							if std.DeviceId == nil {
+								var devId = device.Id()
+								std.DeviceId = &devId
+							}
 						}
 						(device.(exchange.Exchange)).Publish(device, msg)
 						ex.Publish(device, msg)
@@ -123,7 +139,7 @@ type clientDeviceConnector struct {
 	links    map[string]*info
 }
 
-func NewClientConnector(exchange exchange.Exchange) DeviceConnector {
+func NewClientConnector(exchange exchange.Exchange) *clientDeviceConnector {
 	return &clientDeviceConnector{
 		exchange: exchange,
 		links:    make(map[string]*info),
@@ -170,10 +186,12 @@ func (s *clientDeviceConnector) Start() error {
 				func(ctx network.InboundContext, msg network.Message) {
 					if device != nil {
 						switch m := msg.(type) {
-						case exchange.SortReport:
-							logger.Infof("%s, Sort, Id: %d, ChuteId: %d", device.Name(), m.Id, m.ChuteId)
-						case exchange.DwsReport:
-							logger.Infof("%s, DWS Id: %d", device.Name(), m.Id)
+						case exchange.StdMessage:
+							m.Device = device
+							if m.DeviceId == nil {
+								var devId = device.Id()
+								m.DeviceId = &devId
+							}
 						}
 						ex.Publish(device, msg)
 					}
